@@ -2,7 +2,6 @@ package service
 
 import (
 	"encoding/base64"
-	"fmt"
 	"log"
 	"time"
 
@@ -26,7 +25,6 @@ func GenerateTokenPair(server *server.Server) (accessToken string,
 	exp int64,
 	err error,
 ) {
-	fmt.Println("В функции генерации токенов")
 	var refreshUID string
 	userID := uuid.New().String()
 	if accessToken, exp, err = createAccessToken(userID, ExpireAccessMinutes,
@@ -95,7 +93,6 @@ func createRefreshToken(userID string, expireMinutes int, secret string) (cypher
 		log.Print("Токен не был удачно подписан!")
 		return
 	}
-
 	//Шифрование в base64 для передачи
 	cypheredToken = base64.StdEncoding.EncodeToString([]byte(signedToken))
 	return
