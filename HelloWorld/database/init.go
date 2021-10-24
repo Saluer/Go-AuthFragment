@@ -20,6 +20,7 @@ func Init() DBSettings {
 	// defer cancel()
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
+		print("Инициализация базы данных не удалась!")
 		log.Fatal(err)
 	}
 	return DBSettings{client, context.TODO()}

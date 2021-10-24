@@ -1,7 +1,9 @@
 package service
 
 import (
+	"encoding/base64"
 	"fmt"
+	"log"
 	"time"
 
 	dbs "auth/database/service"
@@ -10,6 +12,7 @@ import (
 
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const ExpireAccessMinutes = 30
@@ -26,12 +29,12 @@ func GenerateTokenPair(server *server.Server) (accessToken string,
 	fmt.Println("В функции генерации токенов")
 	var refreshUID string
 	userID := uuid.New().String()
-	if accessToken, exp, err = createToken(userID, ExpireAccessMinutes,
+	if accessToken, exp, err = createAccessToken(userID, ExpireAccessMinutes,
 		secret); err != nil {
 		return
 	}
 
-	if refreshToken, _, err = createToken(userID, ExpireRefreshMinutes,
+	if refreshToken, _, err = createRefreshToken(userID, ExpireRefreshMinutes,
 		secret); err != nil {
 		return
 	}
@@ -44,7 +47,7 @@ func GenerateTokenPair(server *server.Server) (accessToken string,
 }
 
 //TODO стоит поменять способ создания. Каждый вид токена должен создаваться по-разному
-func createToken(userID string, expireMinutes int, secret string) (token string,
+func createAccessToken(userID string, expireMinutes int, secret string) (signedToken string,
 	exp int64,
 	err error,
 ) {
@@ -58,7 +61,42 @@ func createToken(userID string, expireMinutes int, secret string) (token string,
 	}
 
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
-	token, err = jwtToken.SignedString([]byte(secret))
+	signedToken, err = jwtToken.SignedString([]byte(secret))
 
+	return
+}
+
+func createRefreshToken(userID string, expireMinutes int, secret string) (cypheredToken string,
+	exp int64,
+	err error,
+) {
+	exp = time.Now().Add(time.Minute * time.Duration(expireMinutes)).Unix()
+
+	claims := t.JwtCustomClaims{
+		UserID: userID,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: exp,
+		},
+	}
+
+	//? Так ли нужно?
+	//Шифрование в bcrypt пароля
+	var cryptedPassword []byte
+	if cryptedPassword, err = bcrypt.GenerateFromPassword([]byte(secret), bcrypt.DefaultCost); err != nil {
+		log.Print("Пароль не был удачно зашифрован!")
+		return
+	}
+
+	//Создание нового токена
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS512, claims)
+	var signedToken string
+	//Подпись токена зашифрованным паролем
+	if signedToken, err = jwtToken.SignedString([]byte(cryptedPassword)); err != nil {
+		log.Print("Токен не был удачно подписан!")
+		return
+	}
+
+	//Шифрование в base64 для передачи
+	cypheredToken = base64.StdEncoding.EncodeToString([]byte(signedToken))
 	return
 }

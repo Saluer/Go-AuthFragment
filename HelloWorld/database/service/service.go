@@ -5,7 +5,6 @@ import (
 	"auth/token"
 	"context"
 	"fmt"
-	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -28,7 +27,8 @@ func (service *DatabaseService) InsertToken(RefreshTokenData token.RefreshToken)
 	res, err := collection.InsertOne(context.TODO(), bson.M{"text": RefreshTokenData})
 
 	if err != nil {
-		log.Fatal(err)
+		print("Вставка токена в базу не удалась!")
+		return
 	}
 
 	fmt.Println("Результат вставки токена: ", res)
