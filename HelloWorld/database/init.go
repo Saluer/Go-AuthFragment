@@ -14,14 +14,17 @@ type DBSettings struct {
 }
 
 func Init() *DBSettings {
+	//Подключиться к базе данных mongoDB в облаке
+	//Доступно для любого IP-адреса
 	clientOptions := options.Client().
 		ApplyURI("mongodb+srv://dbUser:dbUserPassword@cluster.6qr8d.mongodb.net/Cluster?retryWrites=true&w=majority")
-	// ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	// defer cancel()
-	client, err := mongo.Connect(context.TODO(), clientOptions)
+	//Создание контекста
+	context := context.TODO()
+	//Создание клиента подключения к базе данных
+	client, err := mongo.Connect(context, clientOptions)
 	if err != nil {
 		print("Инициализация базы данных не удалась!")
 		log.Fatal(err)
 	}
-	return &DBSettings{client, context.TODO()}
+	return &DBSettings{client, context}
 }

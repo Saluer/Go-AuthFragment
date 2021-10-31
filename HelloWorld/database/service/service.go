@@ -11,20 +11,24 @@ import (
 )
 
 type DatabaseService struct {
-	Client *mongo.Client
+	Client  *mongo.Client
+	Context context.Context
 }
 
-func NewService(client *mongo.Client) *DatabaseService {
+func NewService(client *mongo.Client, context context.Context) *DatabaseService {
 	return &DatabaseService{
-		Client: client,
+		Client:  client,
+		Context: context,
 	}
 }
 
 func (service *DatabaseService) InsertToken(RefreshTokenData *token.RefreshToken) {
 	DBClient := service.Client
-	// DBContext := DBSettings.Context
+	DBContext := service.Context
+	//Получение коллекции refresh-токенов из заданной базы данных
 	collection := DBClient.Database("Cluster").Collection("RefreshToken")
-	res, err := collection.InsertOne(context.TODO(), bson.M{"refreshuid": RefreshTokenData.RefreshUID})
+	//Вставка токена в базу
+	res, err := collection.InsertOne(DBContext, bson.M{"refreshuid": RefreshTokenData.RefreshUID})
 
 	if err != nil {
 		log.Fatal("Вставка токена в базу не удалась!")
@@ -35,12 +39,14 @@ func (service *DatabaseService) InsertToken(RefreshTokenData *token.RefreshToken
 }
 
 func (service *DatabaseService) GetRefreshToken(RefreshTokenData string) (result token.RefreshToken, err error) {
-	// DBSettings := service.server.DBSettings
 	DBClient := service.Client
-	// DBContext := DBSettings.Context
+	DBContext := service.Context
+	//Получение коллекции refresh-токенов из заданной базы данных
 	collection := DBClient.Database("Cluster").Collection("RefreshToken")
+	//Создание критерия поиска токена
 	filter := bson.M{"refreshuid": RefreshTokenData}
-	res := collection.FindOne(context.TODO(), filter)
+	//Найти токен и скопировать его обработанные данные в result
+	res := collection.FindOne(DBContext, filter)
 	err = res.Decode(&result)
 
 	if err != nil {
@@ -52,13 +58,15 @@ func (service *DatabaseService) GetRefreshToken(RefreshTokenData string) (result
 }
 
 func (service *DatabaseService) RemoveRefreshToken(RefreshTokenData string) (err error) {
-	// DBSettings := service.server.DBSettings
 	DBClient := service.Client
-	// DBContext := DBSettings.Context
+	DBContext := service.Context
+	//Получение коллекции refresh-токенов из заданной базы данных
 	collection := DBClient.Database("Cluster").Collection("RefreshToken")
+	//Создание критерия поиска токена
 	filter := bson.M{"refreshuid": RefreshTokenData}
+	//Удалить токен с указанными данными
 	var result *mongo.DeleteResult
-	result, err = collection.DeleteOne(context.TODO(), filter)
+	result, err = collection.DeleteOne(DBContext, filter)
 
 	if err != nil {
 		log.Fatal("Удаление токена не удалось: ", err)

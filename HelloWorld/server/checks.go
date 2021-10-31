@@ -9,11 +9,11 @@ import (
 	"github.com/google/uuid"
 )
 
+//Проверка логина. Формирует новый uuid пользователя и передаёт его по адресу /login
 func (server *Server) CheckLogin() map[string]string {
 	data := map[string]interface{}{
 		"userID": uuid.New(),
 	}
-	log.Println(data)
 	var err error
 	var bytesRepresentation []byte
 	if bytesRepresentation, err = json.Marshal(data); err != nil {
@@ -24,14 +24,12 @@ func (server *Server) CheckLogin() map[string]string {
 		log.Fatalln(err)
 	}
 	var result map[string]string
-
 	json.NewDecoder(resp.Body).Decode(&result)
 
-	log.Println(result)
-	log.Println(result["data"])
 	return result
 }
 
+//Проверка обновления токенов. Передаёт полученные в результате логина данные по адресу /refresh
 func (server *Server) CheckRefresh(loginResult map[string]string) {
 	data := map[string]interface{}{
 		"refreshToken": loginResult["refreshToken"],
@@ -50,7 +48,4 @@ func (server *Server) CheckRefresh(loginResult map[string]string) {
 	var result map[string]string
 
 	json.NewDecoder(resp.Body).Decode(&result)
-
-	log.Println(result)
-	log.Println(result["data"])
 }

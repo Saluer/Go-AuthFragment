@@ -9,12 +9,8 @@ import (
 func main() {
 	server := server.NewServer()
 	fmt.Println("Начало")
-	//Запустить работу с путями
+	//Запустить конфигурацию путей
 	routes.ConfigureRoutes(server)
 	fmt.Println("Отконфигурированы пути")
-	if err := server.Start("4000"); err != nil {
-		fmt.Println(err)
-	}
-
-	// server.CheckRefresh(loginResult)
+	server.Start("4000")
 }

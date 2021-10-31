@@ -18,11 +18,10 @@ type Data struct {
 	Message string `json:"message"`
 }
 
-func NewLoginResponse(token, refreshToken string, exp int64) *LoginResponse {
+func NewLoginResponse(token, refreshToken string) *LoginResponse {
 	return &LoginResponse{
 		AccessToken:  token,
 		RefreshToken: refreshToken,
-		Exp:          exp,
 	}
 }
 
@@ -30,13 +29,6 @@ func MessageResponse(c echo.Context, statusCode int, message string) error {
 	return Response(c, statusCode, Data{
 		Code:    statusCode,
 		Message: message,
-	})
-}
-
-func ErrorResponse(c echo.Context, statusCode int, message string) error {
-	return Response(c, statusCode, Error{
-		Code:  statusCode,
-		Error: message,
 	})
 }
 
