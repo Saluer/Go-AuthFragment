@@ -7,10 +7,14 @@ import (
 )
 
 func main() {
-	server := server.NewServer(":4000")
-	//Запустить работу с путями
+	server := server.NewServer()
 	fmt.Println("Начало")
-	router := routes.ConfigureRoutes(server)
+	//Запустить работу с путями
+	routes.ConfigureRoutes(server)
 	fmt.Println("Отконфигурированы пути")
-	server.Start(router)
+	if err := server.Start("4000"); err != nil {
+		fmt.Println(err)
+	}
+
+	// server.CheckRefresh(loginResult)
 }

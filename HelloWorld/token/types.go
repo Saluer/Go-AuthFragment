@@ -1,14 +1,15 @@
 package token
 
-import "github.com/golang-jwt/jwt"
+import (
+	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
+)
 
 type JwtCustomClaims struct {
-	UserID string `json:"userid"`
-	ID     string `json:"id"`
+	UserID uuid.UUID `json:"userid"`
 	jwt.StandardClaims
 }
 
 type RefreshToken struct {
-	RefreshUID string `json:"refresh"`
-	TokenText  string `json:"tokenText"`
+	RefreshUID string `json:"refresh" bson:"refreshuid"`
 }

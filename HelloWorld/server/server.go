@@ -1,29 +1,25 @@
 package server
 
 import (
-	"net/http"
-	"os"
-
 	db "auth/database"
 
-	"github.com/gorilla/handlers"
-	"github.com/gorilla/mux"
+	"github.com/labstack/echo/v4"
 )
 
 type Server struct {
-	port string
-	db.DBSettings
+	Echo *echo.Echo
+	*db.DBSettings
 }
 
-func NewServer(port string) *Server {
+func NewServer() *Server {
 	return &Server{
-		port:       port,
+		Echo:       echo.New(),
 		DBSettings: db.Init(),
 	}
 }
 
-func (server *Server) Start(router *mux.Router) {
+func (server *Server) Start(addr string) error {
 	//Запустить сервер по данному порту
-	http.ListenAndServe(server.port, handlers.LoggingHandler(os.Stdout, router))
+	return server.Echo.Start(":" + addr)
 
 }

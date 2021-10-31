@@ -13,7 +13,7 @@ type DBSettings struct {
 	Context context.Context
 }
 
-func Init() DBSettings {
+func Init() *DBSettings {
 	clientOptions := options.Client().
 		ApplyURI("mongodb+srv://dbUser:dbUserPassword@cluster.6qr8d.mongodb.net/Cluster?retryWrites=true&w=majority")
 	// ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -23,5 +23,5 @@ func Init() DBSettings {
 		print("Инициализация базы данных не удалась!")
 		log.Fatal(err)
 	}
-	return DBSettings{client, context.TODO()}
+	return &DBSettings{client, context.TODO()}
 }

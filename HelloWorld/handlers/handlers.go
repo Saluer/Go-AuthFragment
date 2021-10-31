@@ -1,32 +1,65 @@
 package handlers
 
 import (
+	"auth/requests"
 	"auth/responses"
 	"auth/server"
 	ts "auth/token/service"
 	"net/http"
+
+	"github.com/labstack/echo/v4"
 )
 
 type AuthHandler struct {
-	LoginHandler   http.HandlerFunc
-	RefreshHandler http.HandlerFunc
-	AccessHandler  http.HandlerFunc
+	server       *server.Server
+	tokenService *ts.TokenService
 }
 
 func NewAuthHandler(server *server.Server) *AuthHandler {
-	var LoginHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		accessToken, refreshToken, exp, err := ts.GenerateTokenPair(server)
+	return &AuthHandler{server: server, tokenService: ts.NewTokenService(server)}
+}
 
-		if err != nil {
-			w.Write([]byte("Случилась ошибка"))
-		}
+func (authHandler *AuthHandler) Login(c echo.Context) error {
+	loginRequest := new(requests.LoginRequest)
+	//Прикрепляем к контексту loginRequest
+	if err := c.Bind(loginRequest); err != nil {
+		return err
+	}
+	accessToken, refreshToken, exp, err := authHandler.tokenService.GenerateTokenPair(loginRequest)
+	if err != nil {
+		return err
+	}
+	res := responses.NewLoginResponse(accessToken, refreshToken, exp)
 
-		res := responses.NewLoginResponse(accessToken, refreshToken, exp)
+	return responses.Response(c, http.StatusOK, res)
+}
 
-		w.Write([]byte(res.AccessToken))
-		w.Write([]byte(res.RefreshToken))
-	})
-	var RefreshHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
-	var AccessHandler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
-	return &AuthHandler{LoginHandler: LoginHandler, RefreshHandler: RefreshHandler, AccessHandler: AccessHandler}
+func (authHandler *AuthHandler) Refresh(c echo.Context) error {
+	refreshRequest := new(requests.RefreshRequest)
+
+	//Прикрепляем к контексту refreshRequest
+	if err := c.Bind(refreshRequest); err != nil {
+		return err
+	}
+
+	if err := authHandler.tokenService.ValidateToken(refreshRequest.RefreshToken); err != nil {
+		return responses.MessageResponse(c, http.StatusUnauthorized, "Пользователь не авторизован!")
+	}
+
+	loginRequest := new(requests.LoginRequest)
+	//Прикрепляем к контексту loginRequest
+	if err := c.Bind(loginRequest); err != nil {
+		return err
+	}
+	accessToken, refreshToken, exp, err := authHandler.tokenService.GenerateTokenPair(loginRequest)
+	if err != nil {
+		return err
+	}
+	res := responses.NewLoginResponse(accessToken, refreshToken, exp)
+
+	return responses.Response(c, http.StatusOK, res)
+}
+
+func (authHandler *AuthHandler) Access(c echo.Context) error {
+	return nil
 }
