@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/base64"
 	"fmt"
 	"log"
 	"time"
@@ -56,25 +55,42 @@ func (ts *TokenService) GenerateTokenPair(lr *requests.LoginRequest) (accessToke
 func (ts *TokenService) ValidateToken(tokenData string) (
 	err error,
 ) {
-	tokenFromDB := ts.dbService.GetRefreshToken(tokenData)
-	var token string
-	if token, err = ts.decodeAfterTransfer(tokenFromDB.RefreshUID); err != nil {
-		log.Fatal("Декодирование после получения прошло неудачно!")
+	//Если не выдаст ошибку, то токен есть в базе и пользоватерь авторизован
+	if _, err = ts.dbService.GetRefreshToken(tokenData); err != nil {
+		fmt.Println("Получение refresh-токена из базы не удалось")
 	}
-	log.Println(token)
-	test, _ := ts.decodeAfterTransfer(tokenData)
-	log.Println(token == test)
-	// cachedTokens := new(CachedTokens)
-	// err = json.Unmarshal([]byte(cacheJSON), cachedTokens)
-
-	// if err != nil || tokenUID != claims.UID {
-	// 	return errors.New("token not found")
-	// }
-
 	return
 }
 
-//TODO стоит поменять способ создания. Каждый вид токена должен создаваться по-разному
+func (ts *TokenService) ParseToken(tokenString string) (
+	claims *t.JwtCustomClaims,
+	err error,
+) {
+	token, err := jwt.ParseWithClaims(tokenString, &t.JwtCustomClaims{},
+		func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+			return []byte(secret), nil
+		})
+	if err != nil {
+		return
+	}
+
+	if claims, ok := token.Claims.(*t.JwtCustomClaims); ok && token.Valid {
+		return claims, nil
+	}
+
+	return nil, err
+}
+
+func (ts *TokenService) RemoveRefreshToken(tokenString string) (
+	err error,
+) {
+	err = ts.dbService.RemoveRefreshToken(tokenString)
+	return err
+}
+
 func (ts *TokenService) createAccessToken(userID uuid.UUID, expireMinutes int, secret string) (signedToken string,
 	exp int64,
 	err error,
@@ -94,7 +110,7 @@ func (ts *TokenService) createAccessToken(userID uuid.UUID, expireMinutes int, s
 	return
 }
 
-func (ts *TokenService) createRefreshToken(userID uuid.UUID, expireMinutes int, secret string) (cypheredToken string,
+func (ts *TokenService) createRefreshToken(userID uuid.UUID, expireMinutes int, secret string) (cryptedTokenString string,
 	exp int64,
 	err error,
 ) {
@@ -124,18 +140,6 @@ func (ts *TokenService) createRefreshToken(userID uuid.UUID, expireMinutes int, 
 		log.Print("Пароль не был удачно зашифрован!")
 		return
 	}
-	//Шифрование токена в base64 для передачи
-	cypheredToken = ts.encodeToTransfer(string(cryptedToken))
+	cryptedTokenString = string(cryptedToken)
 	return
-}
-
-func (ts *TokenService) encodeToTransfer(signedToken string) (cypheredToken string) {
-	cypheredToken = base64.StdEncoding.EncodeToString([]byte(signedToken))
-	return
-}
-
-func (ts *TokenService) decodeAfterTransfer(cypheredToken string) (signedToken string, err error) {
-	res, err := base64.StdEncoding.DecodeString(cypheredToken)
-	signedToken = string(res)
-	return signedToken, err
 }

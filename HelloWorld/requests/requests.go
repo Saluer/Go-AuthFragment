@@ -8,5 +8,6 @@ type LoginRequest struct {
 
 //TODO Подумать над изменением
 type RefreshRequest struct {
-	RefreshToken string `json:"refreshToken" validate:"required" example:"refresh_token"`
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
 }

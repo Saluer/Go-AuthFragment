@@ -4,6 +4,7 @@ import (
 	"auth/requests"
 	"auth/responses"
 	"auth/server"
+	"auth/token"
 	ts "auth/token/service"
 	"net/http"
 
@@ -34,7 +35,7 @@ func (authHandler *AuthHandler) Login(c echo.Context) error {
 	return responses.Response(c, http.StatusOK, res)
 }
 
-func (authHandler *AuthHandler) Refresh(c echo.Context) error {
+func (authHandler *AuthHandler) Refresh(c echo.Context) (err error) {
 	refreshRequest := new(requests.RefreshRequest)
 
 	//Прикрепляем к контексту refreshRequest
@@ -46,11 +47,14 @@ func (authHandler *AuthHandler) Refresh(c echo.Context) error {
 		return responses.MessageResponse(c, http.StatusUnauthorized, "Пользователь не авторизован!")
 	}
 
-	loginRequest := new(requests.LoginRequest)
-	//Прикрепляем к контексту loginRequest
-	if err := c.Bind(loginRequest); err != nil {
-		return err
+	var claims *token.JwtCustomClaims
+	if claims, err = authHandler.tokenService.ParseToken(refreshRequest.AccessToken); err != nil {
+		return responses.MessageResponse(c, http.StatusUnauthorized, "Пользователь не авторизован!")
 	}
+
+	authHandler.tokenService.RemoveRefreshToken(refreshRequest.RefreshToken)
+	loginRequest := new(requests.LoginRequest)
+	loginRequest.UserID = claims.UserID
 	accessToken, refreshToken, exp, err := authHandler.tokenService.GenerateTokenPair(loginRequest)
 	if err != nil {
 		return err
@@ -58,8 +62,4 @@ func (authHandler *AuthHandler) Refresh(c echo.Context) error {
 	res := responses.NewLoginResponse(accessToken, refreshToken, exp)
 
 	return responses.Response(c, http.StatusOK, res)
-}
-
-func (authHandler *AuthHandler) Access(c echo.Context) error {
-	return nil
 }

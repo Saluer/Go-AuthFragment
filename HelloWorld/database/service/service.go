@@ -34,21 +34,36 @@ func (service *DatabaseService) InsertToken(RefreshTokenData *token.RefreshToken
 	fmt.Println("Результат вставки токена: ", res)
 }
 
-func (service *DatabaseService) GetRefreshToken(RefreshTokenData string) token.RefreshToken {
+func (service *DatabaseService) GetRefreshToken(RefreshTokenData string) (result token.RefreshToken, err error) {
 	// DBSettings := service.server.DBSettings
 	DBClient := service.Client
 	// DBContext := DBSettings.Context
 	collection := DBClient.Database("Cluster").Collection("RefreshToken")
 	filter := bson.M{"refreshuid": RefreshTokenData}
-	var result token.RefreshToken
 	res := collection.FindOne(context.TODO(), filter)
-	fmt.Println("Результат получения токена: ", res)
-	err := res.Decode(&result)
+	err = res.Decode(&result)
 
 	if err != nil {
 		log.Fatal("Получение токена не удалось: ", err)
 	}
 
 	fmt.Println("Результат получения токена: ", result)
-	return result
+	return
+}
+
+func (service *DatabaseService) RemoveRefreshToken(RefreshTokenData string) (err error) {
+	// DBSettings := service.server.DBSettings
+	DBClient := service.Client
+	// DBContext := DBSettings.Context
+	collection := DBClient.Database("Cluster").Collection("RefreshToken")
+	filter := bson.M{"refreshuid": RefreshTokenData}
+	var result *mongo.DeleteResult
+	result, err = collection.DeleteOne(context.TODO(), filter)
+
+	if err != nil {
+		log.Fatal("Удаление токена не удалось: ", err)
+	}
+
+	fmt.Println("Результат удаления токена: ", result)
+	return
 }

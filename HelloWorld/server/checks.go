@@ -33,9 +33,9 @@ func (server *Server) CheckLogin() map[string]string {
 }
 
 func (server *Server) CheckRefresh(loginResult map[string]string) {
-	refreshToken := loginResult["refreshToken"]
 	data := map[string]interface{}{
-		"refreshToken": refreshToken,
+		"refreshToken": loginResult["refreshToken"],
+		"accessToken":  loginResult["accessToken"],
 	}
 
 	var err error
